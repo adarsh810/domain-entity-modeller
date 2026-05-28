@@ -3,9 +3,37 @@
 import { useEffect, useState, useCallback, use } from 'react'
 import dynamic from 'next/dynamic'
 import EntityDrawer from '@/components/EntityDrawer'
-import { DomainEntity, DomainSnapshot } from '@/types'
+import { DomainEntity, DomainSnapshot, ExplanationScores } from '@/types'
 
 const EntityGraph = dynamic(() => import('@/components/EntityGraph'), { ssr: false })
+
+function ScoreBar({ label, score, note }: { label: string; score: number; note: string }) {
+  const color = score >= 8 ? 'bg-emerald-500' : score >= 5 ? 'bg-amber-400' : 'bg-red-400'
+  const textColor = score >= 8 ? 'text-emerald-600' : score >= 5 ? 'text-amber-600' : 'text-red-500'
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</span>
+        <span className={`text-sm font-bold tabular-nums ${textColor}`}>{score}<span className="text-xs font-normal text-gray-400">/10</span></span>
+      </div>
+      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1.5">
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${score * 10}%` }} />
+      </div>
+      <p className="text-xs text-gray-500 leading-snug">{note}</p>
+    </div>
+  )
+}
+
+function ScorePanel({ scores }: { scores: ExplanationScores }) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Explanation Quality</p>
+      <ScoreBar label="Testable" score={scores.testable.score} note={scores.testable.note} />
+      <ScoreBar label="Hard to vary" score={scores.hard_to_vary.score} note={scores.hard_to_vary.note} />
+      <ScoreBar label="Genuinely explanatory" score={scores.explanatory.score} note={scores.explanatory.note} />
+    </div>
+  )
+}
 
 export default function DomainPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -15,7 +43,7 @@ export default function DomainPage({ params }: { params: Promise<{ id: string }>
   const [loading, setLoading] = useState(true)
   const [pushback, setPushback] = useState('')
   const [refining, setRefining] = useState(false)
-  const [tab, setTab] = useState<'graph' | 'explanation'>('graph')
+  const [tab, setTab] = useState<'graph' | 'explanation'>('explanation')
 
   useEffect(() => {
     fetch(`/api/domains/${id}`)
@@ -115,13 +143,20 @@ export default function DomainPage({ params }: { params: Promise<{ id: string }>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto p-8 max-w-3xl mx-auto w-full">
-            <div className="bg-white rounded-2xl border border-gray-200 p-7 mb-6">
+            {/* Explanation */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-7 mb-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Best Explanation</p>
-              <p className="text-gray-800 leading-relaxed">{activeSnapshot.explanation}</p>
+              <p className="text-gray-900 text-base leading-relaxed font-medium">{activeSnapshot.explanation}</p>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Derived Entities</p>
+            {/* Scores */}
+            {activeSnapshot.explanation_scores && (
+              <ScorePanel scores={activeSnapshot.explanation_scores} />
+            )}
+
+            {/* Entities */}
+            <div className="space-y-2 mt-5">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Derived Entities</p>
               {activeSnapshot.entities.map(e => (
                 <button
                   key={e.id}

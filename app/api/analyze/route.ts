@@ -15,15 +15,21 @@ The Deutsch test for each proposed entity:
 
 Your job for each domain:
 1. Deeply understand the domain from the user's input and your own knowledge
-2. Produce a BEST EXPLANATION — testable (state what would falsify it), hard-to-vary (every clause does load-bearing work), abstract (captures essential structure not implementation)
-3. Derive entities strictly from the explanation — entities are consequences, not design decisions
-4. For each entity: pass or reject the Deutsch test explicitly
-5. Include REJECTED entities (read_model, folk_concept) in the output — they are instructive
+2. Produce a BEST EXPLANATION — 2-4 sentences, highly abstract, captures the essential causal structure not implementation detail. Must be: (a) testable — states what would falsify it, (b) hard-to-vary — every clause is load-bearing, removing any clause makes it wrong or empty, (c) genuinely explanatory — tells you WHY things are the way they are, not just WHAT they are
+3. Score your explanation on each of the three criteria (1–10) with a one-sentence note
+4. Derive entities strictly from the explanation — entities are consequences, not design decisions
+5. For each entity: pass or reject the Deutsch test explicitly
+6. Include REJECTED entities (read_model, folk_concept) in the output — they are instructive
 
 Return ONLY valid JSON with this exact structure, no markdown fences:
 {
   "domain_name": "Inferred name for this domain",
-  "explanation": "The best explanation paragraph",
+  "explanation": "2-4 sentence abstract explanation of the domain's causal structure",
+  "explanation_scores": {
+    "testable": { "score": 8, "note": "One sentence on what would falsify this explanation" },
+    "hard_to_vary": { "score": 7, "note": "One sentence on which clauses are most load-bearing" },
+    "explanatory": { "score": 9, "note": "One sentence on what causal mechanism this reveals" }
+  },
   "entities": [
     {
       "id": "snake_case_id",
@@ -125,6 +131,7 @@ export async function POST(req: Request) {
       domain_id: finalDomainId,
       user_input: pushback ?? user_input,
       explanation: parsed.explanation,
+      explanation_scores: parsed.explanation_scores ?? null,
       domain_name: parsed.domain_name,
       entities: parsed.entities,
       relationships: parsed.relationships,

@@ -16,11 +16,23 @@ export interface EntityRelationship {
   label: string
 }
 
+export interface ExplanationScore {
+  score: number  // 1–10
+  note: string
+}
+
+export interface ExplanationScores {
+  testable: ExplanationScore
+  hard_to_vary: ExplanationScore
+  explanatory: ExplanationScore
+}
+
 export interface DomainSnapshot {
   id: string
   domain_id: string
   user_input: string
   explanation: string
+  explanation_scores?: ExplanationScores
   domain_name: string
   entities: DomainEntity[]
   relationships: EntityRelationship[]
