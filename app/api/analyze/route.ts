@@ -59,6 +59,7 @@ async function fetchUrl(url: string): Promise<string> {
 }
 
 export async function POST(req: Request) {
+  try {
   const { user_input, urls = [], domain_id, previous_snapshot, pushback } = await req.json()
 
   // Fetch URL content if provided
@@ -133,4 +134,9 @@ export async function POST(req: Request) {
     .single()
 
   return Response.json({ domain_id: finalDomainId, snapshot })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[analyze]', msg)
+    return Response.json({ error: msg }, { status: 500 })
+  }
 }
