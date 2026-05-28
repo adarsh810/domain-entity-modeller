@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, use } from 'react'
+import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import EntityDrawer from '@/components/EntityDrawer'
 import { DomainEntity, DomainSnapshot, ExplanationScores } from '@/types'
@@ -37,12 +38,14 @@ function ScorePanel({ scores }: { scores: ExplanationScores }) {
 
 export default function DomainPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const router = useRouter()
   const [snapshots, setSnapshots] = useState<DomainSnapshot[]>([])
   const [activeSnapshot, setActiveSnapshot] = useState<DomainSnapshot | null>(null)
   const [selectedEntity, setSelectedEntity] = useState<DomainEntity | null>(null)
   const [loading, setLoading] = useState(true)
   const [pushback, setPushback] = useState('')
   const [refining, setRefining] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [tab, setTab] = useState<'graph' | 'explanation'>('explanation')
 
   useEffect(() => {
@@ -58,6 +61,13 @@ export default function DomainPage({ params }: { params: Promise<{ id: string }>
   const handleSelect = useCallback((entity: DomainEntity) => {
     setSelectedEntity(entity)
   }, [])
+
+  const handleDelete = async () => {
+    if (!confirm('Delete this domain and all its snapshots? This cannot be undone.')) return
+    setDeleting(true)
+    await fetch(`/api/domains/${id}`, { method: 'DELETE' })
+    router.push('/')
+  }
 
   const handlePushback = async () => {
     if (!pushback.trim() || !activeSnapshot) return
@@ -108,10 +118,17 @@ export default function DomainPage({ params }: { params: Promise<{ id: string }>
             </select>
           )}
         </div>
-        <div className="flex items-center gap-3 text-xs text-gray-500">
+        <div className="flex items-center gap-4 text-xs text-gray-500">
           <span className="text-indigo-600 font-medium">{firstClass.length} first class</span>
           <span className="text-amber-600">{borderline.length} borderline</span>
           <span className="text-gray-400">{rejected.length} rejected</span>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="ml-2 text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40 text-xs"
+          >
+            {deleting ? 'Deleting…' : 'Delete'}
+          </button>
         </div>
       </div>
 
@@ -145,8 +162,19 @@ export default function DomainPage({ params }: { params: Promise<{ id: string }>
           <div className="flex-1 overflow-y-auto p-8 max-w-3xl mx-auto w-full">
             {/* Explanation */}
             <div className="bg-white rounded-2xl border border-gray-200 p-7 mb-5">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Best Explanation</p>
-              <p className="text-gray-900 text-base leading-relaxed font-medium">{activeSnapshot.explanation}</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Best Explanation</p>
+              {activeSnapshot.explanation_clauses?.length ? (
+                <ol className="space-y-2.5 list-none">
+                  {activeSnapshot.explanation_clauses.map((clause, i) => (
+                    <li key={i} className="flex gap-3">
+                      <span className="text-xs font-bold text-gray-300 mt-0.5 shrink-0 w-4">{i + 1}</span>
+                      <span className="text-gray-900 text-sm leading-relaxed">{clause}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-gray-900 text-sm leading-relaxed">{activeSnapshot.explanation}</p>
+              )}
             </div>
 
             {/* Scores */}

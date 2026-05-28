@@ -32,6 +32,7 @@ export interface DomainSnapshot {
   domain_id: string
   user_input: string
   explanation: string
+  explanation_clauses?: string[]
   explanation_scores?: ExplanationScores
   domain_name: string
   entities: DomainEntity[]
